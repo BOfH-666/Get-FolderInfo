@@ -93,12 +93,12 @@ Function Get-FolderInfo {
                     { [Int64]$Size / 1GB -gt 1 } { $SizeBytes = "{0,9:###.00 GB}" -f [MATH]::Round([Int64]$Size / 1GB, 2 ); break }
                     { [Int64]$Size / 1MB -gt 1 } { $SizeBytes = "{0,9:###.00 MB}" -f [MATH]::Round([Int64]$Size / 1MB, 2 ); break }
                     { [Int64]$Size / 1KB -gt 1 } { $SizeBytes = "{0,9:###.00 KB}" -f [MATH]::Round([Int64]$Size / 1KB, 2 ); break }
-                    Default { $SizeBytes = "{0,9:###,### Bytes}" -f [Int64]$Size }
+                    Default { $SizeBytes = "{0,9:###,##0 B }" -f [Int64]$Size }
                 }
                 [PSCustomObject]@{
                     Path                 = $Item.FullName 
-                    $SubfolderColumnName = "{0,10:###,###,###,###,###,###}" -f [INT64]$SubfolderCount
-                    $FileCountColumnName = "{0,9:###,###,###,###,###,###}" -f [INT64]$FileCount
+                    $SubfolderColumnName = "{0,10:###,###,###,###,###,##0}" -f [INT64]$SubfolderCount
+                    $FileCountColumnName = "{0,9:###,###,###,###,###,##0}" -f [INT64]$FileCount
                     TotalSize            = $SizeBytes
                 }
             }
