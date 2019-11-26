@@ -8,6 +8,9 @@
     .PARAMETER  Path
         Complete path of the folder.
 
+    .PARAMETER  HumanFriendlyFormat
+        Formats the output in a for humans easier readable format.
+
     .EXAMPLE
         PS C:\> Get-FolderInfo
 
@@ -57,7 +60,11 @@ Function Get-FolderInfo {
             ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
         [System.IO.DirectoryInfo[]]
-        $Path = (Get-Location).Path
+        $Path = (Get-Location).Path,
+        [parameter(Mandatory = $false)]
+        [alias("HFF", "Format")]
+        [Switch]
+        $HumanFriendlyFormat
     )
     process {
         Foreach ($Item in $Path) {
@@ -76,13 +83,33 @@ Function Get-FolderInfo {
 
             $Size = (($Result | Where-Object { $_ -match 'Bytes' }).trim() -replace '\s+', ' ').split(' ')[2]
 
-            [PSCustomObject]@{
-                Path       = $Item.FullName 
-                Subfolders = [INT64]$SubfolderCount
-                FileCount  = [INT64]$FileCount
-                Bytes      = [Int64]$Size
+            if ($HumanFriendlyFormat) {
+                $SubFolderStringLength = $SubfolderCount.ToCharArray().count + [MATH]::Floor(($SubfolderCount.ToCharArray().count - 1 ) / 3)
+                $SubfolderColumnName = "{0,$SubFolderStringLength}" -f "Subfolders"
+                $FileCountStringLength = $FileCount.ToCharArray().count + [MATH]::Floor(($FileCount.ToCharArray().count - 1 ) / 3)
+                $FileCountColumnName = "{0,$FileCountStringLength}" -f "FileCount"
+                switch ([Int64]$Size) {
+                    { [Int64]$Size / 1TB -gt 1 } { $SizeBytes = "{0,9:###,###.00 TB}" -f [MATH]::Round([Int64]$Size / 1TB, 2 ); break }
+                    { [Int64]$Size / 1GB -gt 1 } { $SizeBytes = "{0,9:###.00 GB}" -f [MATH]::Round([Int64]$Size / 1GB, 2 ); break }
+                    { [Int64]$Size / 1MB -gt 1 } { $SizeBytes = "{0,9:###.00 MB}" -f [MATH]::Round([Int64]$Size / 1MB, 2 ); break }
+                    { [Int64]$Size / 1KB -gt 1 } { $SizeBytes = "{0,9:###.00 KB}" -f [MATH]::Round([Int64]$Size / 1KB, 2 ); break }
+                    Default { $SizeBytes = "{0,9:###,### Bytes}" -f [Int64]$Size }
+                }
+                [PSCustomObject]@{
+                    Path                 = $Item.FullName 
+                    $SubfolderColumnName = "{0,10:###,###,###,###,###,###}" -f [INT64]$SubfolderCount
+                    $FileCountColumnName = "{0,9:###,###,###,###,###,###}" -f [INT64]$FileCount
+                    TotalSize            = $SizeBytes
+                }
+            }
+            else {
+                [PSCustomObject]@{
+                    Path       = $Item.FullName 
+                    Subfolders = [INT64]$SubfolderCount
+                    FileCount  = [INT64]$FileCount
+                    Bytes      = [Int64]$Size
+                }
             }
         }
     }
 }
-
