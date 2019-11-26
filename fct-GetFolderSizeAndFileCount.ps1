@@ -68,7 +68,7 @@ Function Get-FolderInfo {
     )
     process {
         Foreach ($Item in $Path) {
-            $Result = robocopy $($Item.FullName) $([System.IO.Path]::GetTempPath()) /E /L /R:0 /NFL /NDL /NC /BYTES /NP /NJH /XJ /XJD /XJF
+            $Result = robocopy $([REGEX]::Replace($Item.FullName, '\\$', '')) $([System.IO.Path]::GetTempPath()) /E /L /R:0 /NFL /NDL /NC /BYTES /NP /NJH /XJ /XJD /XJF
             Write-Verbose "Result:`n'$($Result)'"
 
             $Result -match '(FEHLER|ERROR)\s5\s\(' | Out-Null
