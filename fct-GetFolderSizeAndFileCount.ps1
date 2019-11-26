@@ -14,12 +14,12 @@
         Without any further parameter Get-FolderInfo determines the size and the count of files and subfolders of the current directory.
 
     .EXAMPLE
-        PS C:\> Get-FolderInfo C:\windows\system32
+        PS C:\> Get-FolderInfo -Path C:\windows\system32
 
         This command will determine the size and the count of files and subfolders of the given directory.
 
     .EXAMPLE
-        PS C:\> Get-ChildItem C:\users -Directory | Get-FolderInfo 
+        PS C:\> Get-ChildItem -Path C:\users -Directory | Get-FolderInfo 
 
         This command will determine the size and the count of files and subfolders of the directory C:\users.
 
