@@ -8,8 +8,8 @@
     .PARAMETER  Path
         Complete path of the folder.
 
-    .PARAMETER  HumanFriendlyFormat
-        Formats the output in a for humans easier readable format.
+    .PARAMETER  raw
+        Outputs the size in bytes to be able to calculate with it or add any further steps after the function.
 
     .EXAMPLE
         PS C:\> Get-FolderInfo
@@ -62,9 +62,8 @@ Function Get-FolderInfo {
         [System.IO.DirectoryInfo[]]
         $Path = (Get-Location).Path,
         [parameter(Mandatory = $false)]
-        [alias("HFF", "Format")]
         [Switch]
-        $HumanFriendlyFormat
+        $raw
     )
     process {
         Foreach ($Item in $Path) {
@@ -83,7 +82,15 @@ Function Get-FolderInfo {
 
             $Size = (($Result | Where-Object { $_ -match 'Bytes' }).trim() -replace '\s+', ' ').split(' ')[2]
 
-            if ($HumanFriendlyFormat) {
+            if ($raw) {
+                [PSCustomObject]@{
+                    Path       = $Item.FullName 
+                    Subfolders = [INT64]$SubfolderCount
+                    FileCount  = [INT64]$FileCount
+                    Bytes      = [Int64]$Size
+                }
+            }
+            else {
                 $SubFolderStringLength = $SubfolderCount.ToCharArray().count + [MATH]::Floor(($SubfolderCount.ToCharArray().count - 1 ) / 3)
                 $SubfolderColumnName = "{0,$SubFolderStringLength}" -f "Subfolders"
                 $FileCountStringLength = $FileCount.ToCharArray().count + [MATH]::Floor(($FileCount.ToCharArray().count - 1 ) / 3)
@@ -100,14 +107,6 @@ Function Get-FolderInfo {
                     $SubfolderColumnName = "{0,10:###,###,###,###,###,##0}" -f [INT64]$SubfolderCount
                     $FileCountColumnName = "{0,9:###,###,###,###,###,##0}" -f [INT64]$FileCount
                     TotalSize            = $SizeBytes
-                }
-            }
-            else {
-                [PSCustomObject]@{
-                    Path       = $Item.FullName 
-                    Subfolders = [INT64]$SubfolderCount
-                    FileCount  = [INT64]$FileCount
-                    Bytes      = [Int64]$Size
                 }
             }
         }
