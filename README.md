@@ -28,9 +28,9 @@ System.IO.DirectoryInfo
 FolderInfo  
         
 **.NOTES**  
-Author: O.Soyk
-Date:   20210118
-(To improve the performance of the function it utilizes the MS Windows command line tool Robocopy)
+Author: O.Soyk  
+Date:   20210118  
+(To improve the performance of the function it utilizes the MS Windows command line tool Robocopy)  
         
 **.LINK**  
         http://social.technet.microsoft.com/wiki/contents/articles/1073.robocopy-and-a-few-examples.aspx  
