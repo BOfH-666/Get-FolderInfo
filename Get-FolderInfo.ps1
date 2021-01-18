@@ -1,49 +1,79 @@
-﻿<#
+﻿
+$ScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Definition -parent
+Update-FormatData -AppendPath $ScriptRoot\Get-FolderInfo.format.ps1xml
+
+class FolderInfo {
+    [System.IO.DirectoryInfo] $path;
+    [Int64] $Bytes;
+    [Int64] $SubfolderCount;
+    [Int64] $FileCount;
+    [string] $Size;
+    FolderInfo([System.IO.DirectoryInfo] $Path) {
+        $this.Path = $Path;
+
+        $Result = robocopy $([REGEX]::Replace( $this.Path, '\\$', '')) $([System.IO.Path]::GetTempPath()) /E /L /R:0 /NFL /NDL /NC /BYTES /NP /NJH /XJ /XJD /XJF
+
+        $Result -match '(FEHLER|ERROR)\s5\s\(' | Out-Null
+        If ($Matches) { Write-Debug "`nFolder: '$($this.Path)' - 'Access denied'`n" }
+
+        $Result | Where-Object { $_ -match '(Dateien|Files\s)\:\s+(\d+)\s' } | Out-Null
+        Write-Verbose "Matches:`n '$($Matches)'"
+        $this.FileCount = $Matches[2]
+
+        $Result | Where-Object { $_ -match '(Verzeich\.|Dirs\s)\:\s+(\d+)\s' } | Out-Null
+        $this.SubfolderCount = [Int64]$Matches[2] - 1
+
+        $this.Bytes = [Int64](($Result | Where-Object { $_ -match 'Bytes' }).trim() -replace '\s+', ' ').split(' ')[2]
+        switch ([Int64]$this.Bytes) {
+            { $this.Bytes -gt 1TB } 
+            { $this.Size = "{0,9:n2} TB" -f ($this.Bytes / 1TB) ; break }
+            { $this.Bytes -gt 1GB } 
+            { $this.Size = "{0,9:n2} GB" -f ($this.Bytes / 1GB) ; break }
+            { $this.Bytes -gt 1MB } 
+            { $this.Size = "{0,9:n2} MB" -f ($this.Bytes / 1MB) ; break }
+            { $this.Bytes -gt 1KB } 
+            { $this.Size = "{0,9:n2} KB" -f ($this.Bytes / 1KB) ; break }
+            default  
+            { $this.Size = "{0,9} B " -f $this.Bytes } 
+        }
+    }
+}
+
+<#
     .SYNOPSIS
-        Show information about a particular folder
+        Displays basic folder info.
 
     .DESCRIPTION
-        The function Get-FolderInfo determines the size and the count of the files and subfolders of a given directory. (To improve the performance of the function it utilizes the command line tool Robocopy )
+        This function shows the file and subfolder count as well as the total size in bytes and in human readable formats. The property "Size" is a string property for human convenience. It cannot be used for calculating or sorting purposses. Therefor you can use the property "Bytes".
 
     .PARAMETER  Path
-        Complete path of the folder.
-
-    .PARAMETER  raw
-        Outputs the size in bytes to be able to calculate with it or add any further steps after the function.
+        The folder path to show the info for.
 
     .EXAMPLE
         PS C:\> Get-FolderInfo
 
-        Without any further parameter Get-FolderInfo determines the size and the count of files and subfolders of the current directory.
+        This command will show the information about the current working directory.
 
     .EXAMPLE
-        PS C:\> Get-FolderInfo -Path C:\windows\system32
+        PS C:\> Get-ChildItem -Path $env:USERPROFILE -Directory | Get-FolderInfo | Sort-Object -Property Bytes -Descending
 
-        This command will determine the size and the count of files and subfolders of the given directory.
-
-    .EXAMPLE
-        PS C:\> Get-ChildItem -Path C:\users -Directory | Get-FolderInfo 
-
-        This command will determine the size and the count of files and subfolders of the directory C:\users.
+        This command will show the information about all subfolders of the documents folder of the currently logged on user sorted by total size of the folder contents.
 
     .EXAMPLE
-        PS C:\> 'C:\temp', 'C:\Windows\Temp', "$ENV:TEMP" | Get-FolderInfo 
+        PS C:\> Get-FolderInfo -Path D:\Files\Documents,D:\Files\Backup
 
-        This command will determine the size and the count of files and subfolders of given three temp directories.
-    .EXAMPLE
-        PS c:\> Get-ChildItem -Path 'a particular folder containing subfolders' -Directory | Get-FolderInfo | Sort-Object -Property SubFolders,FileCount,Bytes -Descending
+        This command will show the information about the two specified folders.
 
-        This command will determine the size and the count of files and subfolders of 'a particular folder containing subfolders' and sort it descanding for SubFolder, FileCount and Bytes.
     .INPUTS
         System.IO.DirectoryInfo
 
     .OUTPUTS
-        System.String
-        System.Int64
+        FolderInfo
 
     .NOTES
         Author: O.Soyk
-        Date:   20150604
+        Date:   20210118
+        (To improve the performance of the function it utilizes the MS Windows command line tool Robocopy)
 
     .LINK
         http://social.technet.microsoft.com/wiki/contents/articles/1073.robocopy-and-a-few-examples.aspx
@@ -53,62 +83,18 @@
 #>
 Function Get-FolderInfo {
     [CmdletBinding()]
-    [OutputType([System.String])]
+    [OutputType([FolderInfo])]
     param(
-        [Parameter(ValueFromPipeline = $true,
-            Position = 0, 
+        [Parameter(Position = 0, 
+            ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
         [System.IO.DirectoryInfo[]]
-        $Path = (Get-Location).Path,
-        [parameter(Mandatory = $false)]
-        [Switch]
-        $raw
+        $Path = (Get-Location).Path
     )
     process {
         Foreach ($Item in $Path) {
-            $Result = robocopy $([REGEX]::Replace($Item.FullName, '\\$', '')) $([System.IO.Path]::GetTempPath()) /E /L /R:0 /NFL /NDL /NC /BYTES /NP /NJH /XJ /XJD /XJF
-            Write-Verbose "Result:`n'$($Result)'"
-
-            $Result -match '(FEHLER|ERROR)\s5\s\(' | Out-Null
-            If ($Matches) { Write-Debug "`nFolder: '$($Item)' - 'Access denied'`n" }
-
-            $Result | Where-Object { $_ -match '(Dateien|Files\s)\:\s+(\d+)\s' } | Out-Null
-            Write-Verbose "Matches:`n '$($Matches)'"
-            $FileCount = $Matches[2]
-
-            $Result | Where-Object { $_ -match '(Verzeich\.|Dirs\s)\:\s+(\d+)\s' } | Out-Null
-            $SubfolderCount = $Matches[2]
-
-            $Size = (($Result | Where-Object { $_ -match 'Bytes' }).trim() -replace '\s+', ' ').split(' ')[2]
-
-            if ($raw) {
-                [PSCustomObject]@{
-                    Path       = $Item.FullName 
-                    Subfolders = [INT64]$SubfolderCount
-                    FileCount  = [INT64]$FileCount
-                    Bytes      = [Int64]$Size
-                }
-            }
-            else {
-                $SubFolderStringLength = $SubfolderCount.ToCharArray().count + [MATH]::Floor(($SubfolderCount.ToCharArray().count - 1 ) / 3)
-                $SubfolderColumnName = "{0,$SubFolderStringLength}" -f "Subfolders"
-                $FileCountStringLength = $FileCount.ToCharArray().count + [MATH]::Floor(($FileCount.ToCharArray().count - 1 ) / 3)
-                $FileCountColumnName = "{0,$FileCountStringLength}" -f "FileCount"
-                switch ([Int64]$Size) {
-                    { [Int64]$Size / 1TB -gt 1 } { $SizeBytes = "{0,9:###,###.00 TB}" -f [MATH]::Round([Int64]$Size / 1TB, 2 ); break }
-                    { [Int64]$Size / 1GB -gt 1 } { $SizeBytes = "{0,9:###.00 GB}" -f [MATH]::Round([Int64]$Size / 1GB, 2 ); break }
-                    { [Int64]$Size / 1MB -gt 1 } { $SizeBytes = "{0,9:###.00 MB}" -f [MATH]::Round([Int64]$Size / 1MB, 2 ); break }
-                    { [Int64]$Size / 1KB -gt 1 } { $SizeBytes = "{0,9:###.00 KB}" -f [MATH]::Round([Int64]$Size / 1KB, 2 ); break }
-                    Default { $SizeBytes = "{0,9:###,##0 B }" -f [Int64]$Size }
-                }
-                [PSCustomObject]@{
-                    Path                 = $Item.FullName 
-                    $SubfolderColumnName = "{0,10:###,###,###,###,###,##0}" -f [INT64]$SubfolderCount
-                    $FileCountColumnName = "{0,9:###,###,###,###,###,##0}" -f [INT64]$FileCount
-                    TotalSize            = $SizeBytes
-                }
-            }
+            [FolderInfo]::new($Item)
         }
     }
 }
