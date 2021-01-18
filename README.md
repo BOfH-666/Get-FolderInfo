@@ -1,54 +1,38 @@
 # Get-FolderInfo
-
-Show the total size of a given folder, its sub folder count and its file count utilizing robocopy to make it blazing fast
-
-
-
+        
 **.SYNOPSIS**  
-Show information about a particular folder  
+Displays basic folder info.  
         
 **.DESCRIPTION**  
-The function Get-FolderInfo determines the size and the count of the files and subfolders of a given directory. (To improve the performance of the function it utilizes the command line tool robocopy )  
+This function shows the file and subfolder count as well as the total size in bytes and in human readable formats. The property "Size" is a string property for human convenience. It cannot be used for calculating or sorting purposses. Therefor you can use the property "Bytes".  
         
 **.PARAMETER  Path**  
-Complete path of the folder.  
-        
-**.PARAMETER  HumanFriendlyFormat**  
-Formats the output in a for humans easier readable format.  
+The folder path to show the info for.  
         
 **.EXAMPLE**  
 `PS C:\> Get-FolderInfo`  
-Without any further parameter Get-FolderInfo determines the size and the count of files and subfolders of the current directory.
+This command will show the information about the current working directory.
         
 **.EXAMPLE**  
-`PS C:\> Get-FolderInfo -Path C:\windows\system32`  
-This command will determine the size and the count of files and subfolders of the given directory.  
+`PS C:\> Get-ChildItem -Path $env:USERPROFILE -Directory | Get-FolderInfo | Sort-Object -Property Bytes -Descending`  
+This command will show the information about all subfolders of the documents folder of the currently logged on user sorted by total size of the folder contents.  
         
 **.EXAMPLE**  
-`PS C:\> Get-ChildItem -Path C:\users -Directory | Get-FolderInfo`   
-This command will determine the size and the count of files and subfolders of the directory C:\users.  
-        
-**.EXAMPLE**  
-`PS C:\> 'C:\temp', 'C:\Windows\Temp', "$ENV:TEMP" | Get-FolderInfo`   
-This command will determine the size and the count of files and subfolders of given three temp directories.  
-        
-**.EXAMPLE**  
-`PS c:\> Get-ChildItem -Path 'a particular folder containing subfolders' -Directory | Get-FolderInfo | Sort-Object -Property SubFolders,FileCount,Bytes -Descending`  
-This command will determine the size and the count of files and subfolders of 'a particular folder containing subfolders' and sort it descanding for SubFolder, FileCount and Bytes.  
+`PS C:\> Get-FolderInfo -Path D:\Files\Documents,D:\Files\Backup`  
+This command will show the information about the two specified folders.  
         
 **.INPUTS**  
 System.IO.DirectoryInfo  
         
 **.OUTPUTS**  
-System.String  
-System.Int64  
+FolderInfo  
         
 **.NOTES**  
-Author: O.Soyk  
-Date:   20150604  
+Author: O.Soyk
+Date:   20210118
+(To improve the performance of the function it utilizes the MS Windows command line tool Robocopy)
         
 **.LINK**  
         http://social.technet.microsoft.com/wiki/contents/articles/1073.robocopy-and-a-few-examples.aspx  
 **.LINK**  
         https://technet.microsoft.com/en-us/library/cc733145(v=ws.10).aspx  
-
