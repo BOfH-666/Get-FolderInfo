@@ -20,7 +20,9 @@ This command will show the information about the current working directory.
 **.EXAMPLE**  
 
 ```Powershell
-PS C:\> Get-ChildItem -Path $env:USERPROFILE -Directory | Get-FolderInfo | Sort-Object -Property Bytes -Descending
+PS C:\> Get-ChildItem -Path $env:USERPROFILE -Directory |
+>>> Get-FolderInfo |
+>>> Sort-Object -Property Bytes -Descending
 ```
   
 This command will show the information about all subfolders of the documents folder of the currently logged on user sorted by total size of the folder contents.  
