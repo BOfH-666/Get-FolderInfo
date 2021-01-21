@@ -30,7 +30,7 @@ This command will show the information about all subfolders of the documents fol
 **.EXAMPLE**  
 
 ```Powershell
-PS C:\> Get-FolderInfo -Path D:\Files\Documents,D:\Files\Backup
+PS C:\> Get-FolderInfo -Path D:\Files\Documents, D:\Files\Backup
 ```
   
 This command will show the information about the two specified folders.  
